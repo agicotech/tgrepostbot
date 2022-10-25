@@ -1,11 +1,12 @@
-try:
-    import vk_api, requests
-    from aiogram import Bot, Dispatcher, executor, types
-except:
-    import os, sys
-    os.system(sys.executable + ' -m pip install aiogram vk_api')
+for _ in range(2):
+    try:
+        import vk_api, requests
+        from aiogram import Bot, Dispatcher, executor, types
+    except:
+        import os, sys
+        os.system(sys.executable + ' -m pip install aiogram vk_api')
 
-from token import *
+from tgbottokens import *
 vk = vk_api.VkApi(token=vktoken)
 #longpoll = VkBotLongPoll(vk, 214578909)
 CHATID = 2
