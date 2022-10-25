@@ -1,0 +1,13 @@
+[Unit]
+Description=Tg Bot for shitposting
+
+[Service]
+User=tgrepbot
+WorkingDirectory=/home/tgrepbot/tgrepostbot
+VIRTUAL_ENV=/home/tgrepbot/tgrepostbot/venv
+Environment=PATH=$VIRTUAL_ENV/bin:$PATH
+ExecStart=/home/tgrepbot/tgrepostbot/venv/bin/python bot.py
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
