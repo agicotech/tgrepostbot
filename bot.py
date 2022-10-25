@@ -66,7 +66,7 @@ async def stxt(message: types.Message):
     global lastid
     text = message.text
     if lastid != message.from_user.id:
-        text += '\nby @{}'.format(message.from_user.full_name)
+        text += '\nby @{}'.format(message.from_user.username)
         lastid = message.from_user.id
     #if type(message.from_user.username) == str:
     #        text += '\nhttps://t.me/' + message.from_user.username
