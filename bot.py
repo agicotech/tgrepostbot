@@ -1,23 +1,41 @@
 for _ in range(2):
     try:
-        import vk_api, requests
+        import vk_api, requests, re, io
         from aiogram import Bot, Dispatcher, executor, types
+        from aiogram.dispatcher import filters
     except:
-        import os, sys, re, io
+        import os, sys
         os.system(sys.executable + ' -m pip install aiogram vk_api')
 
 from tgbottokens import *
-vk = vk_api.VkApi(token=vktoken)
-vk_me = vk_api.VkApi(token=video_token)
-upload = vk_api.VkUpload(vk)
-video_upload = vk_api.VkUpload(vk_me)
+
 #longpoll = VkBotLongPoll(vk, 214578909)
 CHATID = 2
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
+admin = 493595535
+
+vk = vk_api.VkApi(token=vktoken)
+try:
+    vk_me = vk_api.VkApi(token=video_token)
+
+except vk_api.exceptions.ApiError:
+    tokenlink = "https://oauth.vk.com/oauth/authorize?client_id=51624586&display=page&redirect_uri=vk.com&scope=videos&response_type=token&v=5.131"
+    bot.send_message(admin, f'Токен просрочен, нужна повторная <a href="{tokenlink}">авторизация</a>, отправьте токен в ответ', parse_mode=types.ParseMode.HTML)
+
+
+upload = vk_api.VkUpload(vk)
+video_upload = vk_api.VkUpload(vk_me)
+
+
 pic = re.compile(r'.*\.((jpg)|(png))')
 def ispic(s):
     return pic.match(s) is not None
+
+vid = re.compile(r'.*\.((mp4)|(webm))')
+def isvid(s):
+    return vid.match(s) is not None
+
 def sendphoto(id, photo, text = '', ):
     global upload
     photo = upload.photo_messages(photo)
@@ -51,16 +69,44 @@ async def svd(message: types.Message):
     video(CHATID, downloaded_file, text)
     #    await message.reply('Не получилось переслать: '+ str(e))
 
+
+tex = re.compile(r'vk1\.a\.[\w]+')
+
+@dp.message_handler(filters.Text(contains='vk1.a'))
+async def changetoken(message: types.Message):
+    if message.from_user != admin:
+        stxt(message)
+        return
+    token = tex.findall(message.text)
+    if len(token) == 0:
+        message.reply('no token in msg')
+    else:
+        token = token[0]
+        tkns = []
+        with open ('tgbottokens.py', 'r') as f:
+            tkns = list(f.readlines())
+        j = re.compile('.*video_token.*')
+        for i, e in enumerate(tkns):
+            if j.match(e) is not None:
+                tkns[i] = f'video_token = {token}'
+        global video_token
+        video_token = token
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def stxt(message: types.Message):
     text = message.text
     if message.entities is not None and len(message.entities) > 0:
         try:
             u = message.entities[-1].url
+            print(u)
             if ispic(u):
                 media = requests.get(u)
                 sendphoto(CHATID, io.BytesIO(media._content), text)
                 print('detected url photo')
+                return
+            if isvid(u):
+                media = requests.get(u)
+                video(CHATID, io.BytesIO(media._content), text)
+                print('detected url video')
                 return
         except Exception as e:
             print(e)
