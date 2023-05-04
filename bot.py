@@ -14,15 +14,8 @@ CHATID = 2
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 admin = 493595535
-
 vk = vk_api.VkApi(token=vktoken)
-try:
-    vk_me = vk_api.VkApi(token=video_token)
-
-except vk_api.exceptions.ApiError:
-    tokenlink = "https://oauth.vk.com/oauth/authorize?client_id=51624586&display=page&redirect_uri=vk.com&scope=videos&response_type=token&v=5.131"
-    bot.send_message(admin, f'Токен просрочен, нужна повторная <a href="{tokenlink}">авторизация</a>, отправьте токен в ответ', parse_mode=types.ParseMode.HTML)
-
+vk_me = vk_api.VkApi(token=video_token)
 
 upload = vk_api.VkUpload(vk)
 video_upload = vk_api.VkUpload(vk_me)
@@ -44,8 +37,14 @@ def sendphoto(id, photo, text = '', ):
     
 
 
-def video(id, video, text = ''):
-    a = vk_me.method("video.save", {'is_private':' 1', 'privacy_view': 'all'})
+async def video(id, video, text = ''):
+    try:
+        a = vk_me.method("video.save", {'is_private':' 1', 'privacy_view': 'all'})
+    except vk_api.exceptions.ApiError as e:
+        print('error in videotoken', e)
+        tokenlink = "https://oauth.vk.com/oauth/authorize?client_id=51624586&display=page&redirect_uri=vk.com&scope=131164&response_type=token&v=5.131"
+        await bot.send_message(admin, f'Токен просрочен, нужна повторная <a href="{tokenlink}">авторизация</a>, отправьте токен в ответ', parse_mode=types.ParseMode.HTML)
+        return
     res = requests.post(a['upload_url'], files={'video_file': video}).json()
     attachment = f"video{res['owner_id']}_{res['video_id']}"
     return vk.method('messages.send', {'chat_id':id, 'message':text, 'attachment':attachment, 'random_id':0}, raw= True)
@@ -66,16 +65,17 @@ async def svd(message: types.Message):
     file_info = await bot.get_file(media.file_id)
     downloaded_file = await bot.download_file(file_info.file_path)
     text = message.caption
-    video(CHATID, downloaded_file, text)
+    await video(CHATID, downloaded_file, text)
     #    await message.reply('Не получилось переслать: '+ str(e))
 
 
-tex = re.compile(r'vk1\.a\.[\w]+')
+tex = re.compile(r'vk1\.a\.[\w\-]+')
 
 @dp.message_handler(filters.Text(contains='vk1.a'))
 async def changetoken(message: types.Message):
-    if message.from_user != admin:
-        stxt(message)
+    print('received token msg')
+    if message.from_user.id != admin:
+        await stxt(message)
         return
     token = tex.findall(message.text)
     if len(token) == 0:
@@ -88,11 +88,19 @@ async def changetoken(message: types.Message):
         j = re.compile('.*video_token.*')
         for i, e in enumerate(tkns):
             if j.match(e) is not None:
-                tkns[i] = f'video_token = {token}'
-        global video_token
+                tkns[i] = f'video_token = "{token}"'
+        with open ('tgbottokens.py', 'w') as f:
+            f.writelines(tkns)
+        global video_token, vk_me, video_upload
         video_token = token
+        vk_me = vk_api.VkApi(token=video_token)
+        video_upload = vk_api.VkUpload(vk_me)
+        await bot.send_message(admin, 'Токен успешно поменян')
+
+
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def stxt(message: types.Message):
+    print('received text msg')
     text = message.text
     if message.entities is not None and len(message.entities) > 0:
         try:
@@ -111,7 +119,7 @@ async def stxt(message: types.Message):
         except Exception as e:
             print(e)
             pass
-        return vk.method('messages.send', {'chat_id':CHATID, 'message':text, 'random_id':0, 'dont_parse_links':0})
+    vk.method('messages.send', {'chat_id':CHATID, 'message':text, 'random_id':0, 'dont_parse_links':0})
 
 
 
