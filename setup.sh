@@ -1,6 +1,6 @@
 sudo useradd -m -G sudo tgrepbot
 sudo mkdir /home/tgrepbot/tgrepostbot
-sudo cp -a ./* /home/tgrepbot/tgrepostbot
+sudo cp -a ./{*,.*} /home/tgrepbot/tgrepostbot
 sudo chown -R tgrepbot:tgrepbot /home/tgrepbot/tgrepostbot
 sudo locale-gen ru_RU.utf8
 sudo update-locale LANG=ru_RU.UTF8
